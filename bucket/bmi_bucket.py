@@ -24,7 +24,7 @@ class BMI_BUCKET():
             'version':            '1.0',
             'author_name':        'Jonathan Martin Frame',
             'grid_type':          'scalar',
-            'time_step_size':      60, 
+            'time_step_size':      10, 
             'time_units':         '1 second' }
     
         #---------------------------------------------
@@ -38,7 +38,8 @@ class BMI_BUCKET():
         # Output variable names (CSDMS standard names)
         #---------------------------------------------
         self._output_var_names = ['bucket__overflow', 
-                                  'bucket__outlet']
+                                  'bucket__outlet',
+                                  'bucket__water_surface_elevation']
         
         #------------------------------------------------------
         # Create a Python dictionary that maps CSDMS Standard
@@ -49,6 +50,7 @@ class BMI_BUCKET():
         self._var_name_units_map = {
                                 'bucket__overflow':['bucket_overflow','m3'],
                                 'bucket__outlet':['bucket_outlet','m3'],
+                                'bucket__water_surface_elevation':['water_level_m','m'],
                                 #--------------   Dynamic inputs --------------------------------
                                 'atmosphere_water__time_integral_of_precipitation_mass_flux':['input_m','kg m-2'],
                                 'water_potential_evaporation_flux':['potential_et_m_per_s','m s-1'],
@@ -85,12 +87,8 @@ class BMI_BUCKET():
         self.config_from_json()                                    #
         
         # ________________________________________________
-        # In order to check mass conservation at any time
-        self.reset_total_ume_tracking()
-        
-        # ________________________________________________
         # Time control
-        self.time_step_size = 60
+        self.time_step_size = 10
         self.timestep_h = self.time_step_size / 3600.0
         self.timestep_d = self.timestep_h / 24.0
         self.current_time_step = 0
@@ -113,6 +111,10 @@ class BMI_BUCKET():
         self.potential_et_m_per_timestep = 0
         self.actual_et_m_per_timestep    = 0
          
+        # ________________________________________________
+        # In order to check mass conservation at any time
+        self.reset_total_volume_tracking()
+        
         ####################################################################
         # ________________________________________________________________ #
         # ________________________________________________________________ #
@@ -147,7 +149,7 @@ class BMI_BUCKET():
     def finalize(self,print_mass_balance=False):
 
         self.finalize_mass_balance(verbose=print_mass_balance)
-        self.reset_total_ume_tracking()
+        self.reset_total_volume_tracking()
 
         """Finalize model."""
         self.bucket_model = None
@@ -155,10 +157,9 @@ class BMI_BUCKET():
     
     # ________________________________________________
     # Mass balance tracking
-    def reset_total_ume_tracking(self):
-        self.total_start             = 0
+    def reset_total_volume_tracking(self):
+        self.total_start             = self.water_level_m
         self.total_in                = 0
-        self.total_out               = 0
         self.total_end               = 0
         self.total_lost              = 0
         self.total_overflow          = 0
@@ -177,6 +178,7 @@ class BMI_BUCKET():
         self.outlet_cross_area_m2   = data_loaded['outlet_cross_area_m2']
         self.outlet_elevation_m     = data_loaded['outlet_elevation_m']
         self.max_water_surface_elevation_m = data_loaded['max_water_surface_elevation_m']
+        self.latitude = data_loaded['latitude']
 
         # ___________________________________________________
         # OPTIONAL CONFIGURATIONS
@@ -193,17 +195,12 @@ class BMI_BUCKET():
     def finalize_mass_balance(self, verbose=True):
         
         self.total_end        = self.water_level_m
-        self.global_residual =  self.total_start + \
-                                self.total_in - \
-                                self.total_out - \
-                                self.total_end - \
-                                self.total_lost - self.total_overflow - self.total_outlet
+        self.global_residual =  (self.total_start + self.total_in) - self.total_end - self.total_lost - self.total_overflow - self.total_outlet
         
         if verbose:            
             print("\nMASS BALANCE")
             print("  initial: {:8.4f}".format(self.total_start))
             print("  input: {:8.4f}".format(self.total_in))
-            print("  output: {:8.4f}".format(self.total_out))
             print("  final: {:8.4f}".format(self.total_end))
             print("  lost: {:8.4f}".format(self.total_lost))
             print("  overflow: {:8.4f}".format(self.total_overflow))
@@ -224,7 +221,7 @@ class BMI_BUCKET():
         """
         self._values['bucket__overflow']    = self.overflow_m3
         self._values['bucket__outlet']      = self.outlet_m3
-        self._values['bucket__water_level'] = self.water_level_m 
+        self._values['bucket__water_surface_elevation'] = self.water_level_m 
 
     #---------------------------------------------------------------------------- 
     def initialize_forcings(self):

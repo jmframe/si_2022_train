@@ -3,5 +3,6 @@
     "surface_area_m2":1,
     "outlet_cross_area_m2":0.01,
     "outlet_elevation_m": 1,
-    "max_water_surface_elevation_m":10
+    "max_water_surface_elevation_m":10,
+    "latitude":35
 }

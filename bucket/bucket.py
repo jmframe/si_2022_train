@@ -31,26 +31,32 @@ class BUCKET():
        
        # Add the input mass to the bucket
         b.water_level_m = b.water_level_m + b.input_m
-        
-        
-        # ________________________________________________
-        b.potential_et_m_per_timestep = b.potential_et_m_per_s * b.time_step_size
-        
-        b.actual_et_m_per_timestep = np.min(np.array([b.potential_et_m_per_timestep, b.water_level_m]))
-        
-        b.water_level_m = b.water_level_m - b.actual_et_m_per_timestep
-        
-        b.total_lost += b.actual_et_m_per_timestep
-        
 
+        # ________________________________________________
+        # First check to see what goes over the bucket
+        
         # Overflow if the bucket is too full
         if b.water_level_m > b.max_water_surface_elevation_m:
             # TODO: ADD WEIR EQUATION
             b.overflow_m = b.water_level_m - b.max_water_surface_elevation_m
         else:
             b.overflow_m = 0
+        # ________________________________________________
+        b.water_level_m = b.water_level_m - b.overflow_m
         b.overflow_m3 = b.overflow_m * b.bucket_top_area_m2
         b.total_overflow += b.overflow_m
+        
+        
+        # ________________________________________________
+        b.potential_et_m_per_timestep = b.potential_et_m_per_s * b.time_step_size
+        
+        b.actual_et_m_per_timestep = np.max([0,np.min(np.array([b.potential_et_m_per_timestep, b.water_level_m]))])
+        
+        b.water_level_m = b.water_level_m - b.actual_et_m_per_timestep
+        
+        b.total_lost += b.actual_et_m_per_timestep
+        
+
 
         # Calculate head on the outlet
         b.head_over_outlet_m = (b.water_level_m - b.outlet_m)
@@ -68,12 +74,10 @@ class BUCKET():
             b.outlet_m3= 0
             b.outlet_m = 0
         
+        b.total_outlet += b.outlet_m
+        
         # ________________________________________________
-        b.water_level_m = b.water_level_m - b.outlet_m - b.overflow_m
-
-        # ________________________________________________
-        b.total_outlet += b.outlet_m3
-        b.total_overflow += b.overflow_m3
+        b.water_level_m = b.water_level_m - b.outlet_m
 
         # ________________________________________________
         b.current_time_step += 1
