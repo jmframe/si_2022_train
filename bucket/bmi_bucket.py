@@ -86,7 +86,6 @@ class BMI_BUCKET():
         
         # ________________________________________________
         # Time control
-        self.time_step_size = 1800
         self.timestep_h = self.time_step_size / 3600.0
         self.timestep_d = self.timestep_h / 24.0
         self.current_time_step = 0
@@ -175,6 +174,7 @@ class BMI_BUCKET():
         # ___________________________________________________
         # MANDATORY CONFIGURATIONS
         self.forcing_file                  = data_loaded['forcing_file']
+        self.time_step_size                = data_loaded['time_step_size_seconds']
         self.bucket_top_area_m2            = data_loaded['surface_area_m2']
         self.outlet_cross_area_m2          = data_loaded['outlet_cross_area_m2']
         self.outlet_elevation_m            = data_loaded['outlet_elevation_m']
