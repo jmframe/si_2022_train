@@ -3,12 +3,13 @@ import numpy as np
 import pandas as pd
 import sys
 import json
+import matplotlib.pyplot as plt
 import bucket
 
-class BMI_BUCKET():
+class BMI_PENMAN():
     def __init__(self):
-        """Create a Bmi BUCKET model that is ready for initialization."""
-        super(BMI_BUCKET, self).__init__()
+        """Create a Bmi EVAPORATION model that is ready for initialization."""
+        super(BMI_PENMAN, self).__init__()
         self._values = {}
         self._var_loc = "node"
         self._var_grid_id = 0
@@ -19,25 +20,22 @@ class BMI_BUCKET():
         # Required, static attributes of the model
         #----------------------------------------------
         self._att_map = {
-            'model_name':         'Bucket with a hole in it',
+            'model_name':         'Penman evapotranspiration',
             'version':            '1.0',
             'author_name':        'Jonathan Martin Frame',
             'grid_type':          'scalar',
+            'time_step_size':      3600, 
             'time_units':         '1 second' }
     
         #---------------------------------------------
         # Input variable names (CSDMS standard names)
         #---------------------------------------------
-        self._input_var_names = [
-            'atmosphere_water__time_integral_of_precipitation_volume_flux',
-            'water_potential_evaporation_flux']
+        self._input_var_names = ['land_surface_air__temperature']
     
         #---------------------------------------------
         # Output variable names (CSDMS standard names)
         #---------------------------------------------
-        self._output_var_names = ['bucket__overflow', 
-                                  'bucket__outlet',
-                                  'bucket__water_surface_elevation']
+        self._output_var_names = ['land_surface_water__evaporation_volume_flux']
         
         #------------------------------------------------------
         # Create a Python dictionary that maps CSDMS Standard
@@ -46,12 +44,8 @@ class BMI_BUCKET():
         #     since the input variable names could come from any forcing...
         #------------------------------------------------------
         self._var_name_units_map = {
-                                'bucket__overflow':['bucket_overflow','m3'],
-                                'bucket__outlet':['bucket_outlet','m3'],
-                                'bucket__water_surface_elevation':['water_level_m','m'],
-                                #--------------   Dynamic inputs --------------------------------
-                                'atmosphere_water__time_integral_of_precipitation_volume_flux':['input_mm','kg m-2'],
-                                'water_potential_evaporation_flux':['potential_et_m_per_s','m s-1'],
+                                'land_surface_air__temperature':['temperature','K'],
+                                'land_surface_water__evaporation_volume_flux':['penman','mm d-1'],
                           }
 
     #__________________________________________________________________
@@ -86,38 +80,18 @@ class BMI_BUCKET():
         
         # ________________________________________________
         # Time control
-        self.time_step_size = 1800
+        self.time_step_size = 3600
         self.timestep_h = self.time_step_size / 3600.0
         self.timestep_d = self.timestep_h / 24.0
         self.current_time_step = 0
         self.current_time = self.current_time_step
         
-        self.g = 9.81
-
-        # ________________________________________________
-        # Initial value
-        self.water_level_m = self.outlet_elevation_m
-
-        # ________________________________________________
-        # Inputs
-        self.input_mm = 0
-        self.outlet_m = 0
-        self.potential_et_m_per_s      = 0
-        
-        # ________________________________________________
-        # Evapotranspiration
-        self.potential_et_m_per_timestep = 0
-        self.actual_et_m_per_timestep    = 0
-         
-        # ________________________________________________
-        # In order to check mass conservation at any time
-        self.reset_total_volume_tracking()
         
         ####################################################################
         # ________________________________________________________________ #
         # ________________________________________________________________ #
         # CREATE AN INSTANCE OF THE SIMPLE BUCKET MODEL #
-        self.bucket_model = bucket.BUCKET()
+        self.p = p.PENMAN()
         # ________________________________________________________________ #
         # ________________________________________________________________ #
         ####################################################################
@@ -127,45 +101,23 @@ class BMI_BUCKET():
     # __________________________________________________________________________________________________________
     # BMI: Model Control Function
     def update(self):
-        self.bucket_model.run_bucket(self)
-        self.scale_output()
+        self.p.run_penman(self)
 
     # __________________________________________________________________________________________________________
     # __________________________________________________________________________________________________________
     # BMI: Model Control Function
     def update_until(self, until):
-        for i in range(self.current_time_step, until, self.time_step_size):
-            self.bucket_model.run_bucket(self)
-            self.scale_output()
+        for i in range(self.current_time_step, until):
+           self.p.run_penman(self)
             self.current_time += self.time_step_size
-
-            if self.current_time >= until:
-                break
-        
-        self.current_time_step = self.current_time
         
     # __________________________________________________________________________________________________________
     # __________________________________________________________________________________________________________
     # BMI: Model Control Function
     def finalize(self,print_mass_balance=False):
 
-        self.finalize_mass_balance(verbose=print_mass_balance)
-        self.reset_total_volume_tracking()
-
         """Finalize model."""
-        self.bucket_model = None
-        self.bucket_state = None
-    
-    # ________________________________________________
-    # Mass balance tracking
-    def reset_total_volume_tracking(self):
-        self.total_start             = self.water_level_m
-        self.total_in                = 0
-        self.total_end               = 0
-        self.total_lost              = 0
-        self.total_overflow          = 0
-        self.total_outlet            = 0
-        return
+        self.p = None
     
     #________________________________________________________
     def config_from_json(self):
@@ -174,56 +126,18 @@ class BMI_BUCKET():
 
         # ___________________________________________________
         # MANDATORY CONFIGURATIONS
-        self.forcing_file                  = data_loaded['forcing_file']
-        self.bucket_top_area_m2            = data_loaded['surface_area_m2']
-        self.outlet_cross_area_m2          = data_loaded['outlet_cross_area_m2']
-        self.outlet_elevation_m            = data_loaded['outlet_elevation_m']
-        self.max_water_surface_elevation_m = data_loaded['max_water_surface_elevation_m']
-        self.latitude                      = data_loaded['latitude']
-        self.discharge_coefficient         = data_loaded['discharge_coefficient']
+        self.T_m = data_loaded['T_m']
+        self.T_d = data_loaded['T_d']
+        self.A   = data_loaded['A']
+        self.R_ann   = data_loaded['R_ann']
+        self.T_d = data_loaded['T_d']
 
-        # ___________________________________________________
-        # OPTIONAL CONFIGURATIONS
-        if 'stand_alone' in data_loaded.keys():
-            self.stand_alone                    = data_loaded['stand_alone']
-        if 'forcing_file' in data_loaded.keys():
-            self.reads_own_forcing              = True
-            self.forcing_file                   = data_loaded['forcing_file']
-         
         return
 
-    
-    #________________________________________________________        
-    def finalize_mass_balance(self, verbose=True):
-        
-        self.total_end        = self.water_level_m
-        self.global_residual =  (self.total_start + self.total_in) - self.total_end - self.total_lost - self.total_overflow - self.total_outlet
-        
-        if verbose:            
-            print("\nMASS BALANCE")
-            print("  initial: {:8.4f}".format(self.total_start))
-            print("  input: {:8.4f}".format(self.total_in))
-            print("  final: {:8.4f}".format(self.total_end))
-            print("  lost: {:8.4f}".format(self.total_lost))
-            print("  overflow: {:8.4f}".format(self.total_overflow))
-            print("  outlet: {:8.4f}".format(self.total_outlet))
-            print("  residual: {:6.4e}".format(self.global_residual))
-            
-        return
     
     #________________________________________________________ 
     def load_forcing_file(self):
         self.forcing_data = pd.read_csv(self.forcing_file)
-        
-    #------------------------------------------------------------ 
-    def scale_output(self):
-            
-        """ The output is area normalized, this is needed to un-normalize it.
-            Converts the model outputs
-        """
-        self._values['bucket__overflow']    = self.overflow_m3
-        self._values['bucket__outlet']      = self.outlet_m3
-        self._values['bucket__water_surface_elevation'] = self.water_level_m 
 
     #---------------------------------------------------------------------------- 
     def initialize_forcings(self):

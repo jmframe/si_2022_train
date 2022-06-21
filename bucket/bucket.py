@@ -27,7 +27,8 @@ class BUCKET():
         """
         
         # ________________________________________________
-        b.total_in += b.input_m 
+        b.input_m = b.input_mm / 1000
+        b.total_in += b.input_m
        
        # Add the input mass to the bucket
         b.water_level_m = b.water_level_m + b.input_m
@@ -38,7 +39,7 @@ class BUCKET():
         # Overflow if the bucket is too full
         if b.water_level_m > b.max_water_surface_elevation_m:
             # TODO: ADD WEIR EQUATION
-            b.overflow_m = b.water_level_m - b.max_water_surface_elevation_m
+            b.overflow_m = (b.water_level_m - b.max_water_surface_elevation_m) * 0.95
         else:
             b.overflow_m = 0
         # ________________________________________________
@@ -66,7 +67,7 @@ class BUCKET():
             
             b.velocity_out_m_per_s = np.sqrt(2 * b.g * b.head_over_outlet_m)
             
-            b.outlet_m3 = b.velocity_out_m_per_s *  b.outlet_cross_area_m2 * b.time_step_size
+            b.outlet_m3 = b.discharge_coefficient * b.velocity_out_m_per_s *  b.outlet_cross_area_m2 * b.time_step_size
             b.outlet_m = b.outlet_m3 / b.bucket_top_area_m2
         
         else:
@@ -81,7 +82,7 @@ class BUCKET():
 
         # ________________________________________________
         b.current_time_step += 1
-        b.current_time      += pd.Timedelta(value=b.time_step_size, unit='s')
+        b.current_time      += b.time_step_size
 
         return
     
