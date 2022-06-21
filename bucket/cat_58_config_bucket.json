@@ -1,5 +1,7 @@
 {
-    "forcing_file":"./cat58_01Dec2015.csv",
-    "surface_area":1,
-    "outlet_area":0.01
+    "forcing_file":"../forcing/cat58_01Dec2015.csv",
+    "surface_area_m2":1,
+    "outlet_cross_area_m2":0.01,
+    "outlet_elevation_m": 1,
+    "max_water_surface_elevation_m":10
 }
