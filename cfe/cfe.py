@@ -337,19 +337,20 @@ class CFE():
             take AET from soil moisture storage, 
             using Budyko type curve to limit PET if wilting<soilmoist<field_capacity
         """
+        # DELETEME AND DO SOMETHING GOOD
+        cfe_state.soil_reservoir['wilting_point_m'] = 0.1 
+        Budyko = np.random.random()
         
         if cfe_state.potential_et_m_per_timestep > 0:
             
-            print("this should not happen yet. Still debugging the other functions.")
-            
             if cfe_state.soil_reservoir['storage_m'] >= cfe_state.soil_reservoir['storage_threshold_primary_m']:
             
-                cfe_state.actual_et_m_per_timestep = np.min(cfe_state.potential_et_m_per_timestep, 
-                                                       cfe_state.soil_reservoir['storage_m'])
+                cfe_state.actual_et_m_per_timestep = np.min(np.array([cfe_state.potential_et_m_per_timestep, 
+                                                       cfe_state.soil_reservoir['storage_m']]))
 
                 cfe_state.soil_reservoir['storage_m'] -= cfe_state.actual_et_m_per_timestep
 
-                cfe_state.et_struct['potential_et_m_per_timestep'] = 0.0
+                cfe_state.potential_et_m_per_timestep = 0.0
                                
             elif (cfe_state.soil_reservoir['storage_m'] > cfe_state.soil_reservoir['wilting_point_m'] and 
                   cfe_state.soil_reservoir['storage_m'] < cfe_state.soil_reservoir['storage_threshold_primary_m']):
