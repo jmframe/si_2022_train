@@ -221,8 +221,6 @@ class BMI_PENMAN():
         array_like
             Value array.
         """
-        print(var_name)
-        print(self._values[var_name])
         return self._values[var_name]
 
     #-------------------------------------------------------------------
