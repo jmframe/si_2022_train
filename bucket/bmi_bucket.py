@@ -50,7 +50,7 @@ class BMI_BUCKET():
                                 'bucket__outlet':['bucket_outlet','m3'],
                                 'bucket__water_surface_elevation':['water_level_m','m'],
                                 #--------------   Dynamic inputs --------------------------------
-                                'atmosphere_water__time_integral_of_precipitation_volume_flux':['input_mm','kg m-2'],
+                                'water__input_volume_flux':['input_mm','kg m-2'],
                                 'water_potential_evaporation_flux':['potential_et_m_per_s','m s-1'],
                           }
 

@@ -4,7 +4,7 @@ import pandas as pd
 import sys
 import json
 import matplotlib.pyplot as plt
-import bucket
+import penman
 
 class BMI_PENMAN():
     def __init__(self):
@@ -44,8 +44,8 @@ class BMI_PENMAN():
         #     since the input variable names could come from any forcing...
         #------------------------------------------------------
         self._var_name_units_map = {
-                                'land_surface_air__temperature':['temperature','K'],
-                                'land_surface_water__evaporation_volume_flux':['penman','mm d-1'],
+                                'land_surface_air__temperature':['T','K'],
+                                'land_surface_water__evaporation_volume_flux':['evaporation','mm d-1'],
                           }
 
     #__________________________________________________________________
@@ -91,7 +91,7 @@ class BMI_PENMAN():
         # ________________________________________________________________ #
         # ________________________________________________________________ #
         # CREATE AN INSTANCE OF THE SIMPLE BUCKET MODEL #
-        self.p = p.PENMAN()
+        self.penman = penman.PENMAN()
         # ________________________________________________________________ #
         # ________________________________________________________________ #
         ####################################################################
@@ -101,23 +101,29 @@ class BMI_PENMAN():
     # __________________________________________________________________________________________________________
     # BMI: Model Control Function
     def update(self):
-        self.p.run_penman(self)
+        self.penman.run_penman(self)
 
     # __________________________________________________________________________________________________________
     # __________________________________________________________________________________________________________
     # BMI: Model Control Function
     def update_until(self, until):
-        for i in range(self.current_time_step, until):
-           self.p.run_penman(self)
+        for i in range(self.current_time_step, until+1, self.time_step_size):
+            self.penman.run_penman(self)
+            self.scale_output()
             self.current_time += self.time_step_size
+
+            if self.current_time >= until:
+                break
         
+        self.current_time_step = self.current_time
+
     # __________________________________________________________________________________________________________
     # __________________________________________________________________________________________________________
     # BMI: Model Control Function
     def finalize(self,print_mass_balance=False):
 
         """Finalize model."""
-        self.p = None
+        self.penman = None
     
     #________________________________________________________
     def config_from_json(self):
@@ -126,11 +132,14 @@ class BMI_PENMAN():
 
         # ___________________________________________________
         # MANDATORY CONFIGURATIONS
+        self.forcing_file = data_loaded['forcing_file']
         self.T_m = data_loaded['T_m']
         self.T_d = data_loaded['T_d']
         self.A   = data_loaded['A']
+        self.R   = data_loaded['R']
         self.R_ann   = data_loaded['R_ann']
         self.T_d = data_loaded['T_d']
+        self.h = data_loaded['h']
 
         return
 
@@ -198,7 +207,7 @@ class BMI_PENMAN():
         array_like
             Copy of values.
         """
-        return self.get_value_ptr(var_name)
+        return np.random.random() #self.get_value_ptr(var_name)
 
     #-------------------------------------------------------------------
     def get_value_ptr(self, var_name):
@@ -212,6 +221,8 @@ class BMI_PENMAN():
         array_like
             Value array.
         """
+        print(var_name)
+        print(self._values[var_name])
         return self._values[var_name]
 
     #-------------------------------------------------------------------

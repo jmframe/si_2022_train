@@ -18,13 +18,13 @@ class PENMAN():
                 Nothing, just updates the values in the e
         """
         T_minus_T_d = 0.0023 * p.h + 0.37 * p.T * + 0.53 * p.R  + 0.35 * p.R_ann - 10.19
-        penman_numerator = (700 * p.T_m) / (100 - p.A) + 15 * T_minus_t_d
+        penman_numerator = (700 * p.T_m) / (100 - p.A) + 15 * T_minus_T_d
         penman_denominator = 80 - p.T
-        p.penman = penman_numerator - penman_demoninator
+        p.evaporation = penman_numerator - penman_denominator
 
         # ________________________________________________
-        b.current_time_step += 1
-        b.current_time      += pd.Timedelta(value=b.time_step_size, unit='s')
+        p.current_time_step += 1
+        p.current_time      += p.time_step_size
 
         return
     

@@ -27,7 +27,9 @@ class BUCKET():
         """
         
         # ________________________________________________
-        b.input_m = b.input_mm / 1000
+        b.input_m = (b.input_mm / 1000) * b.time_step_size
+        if b.input_m > 0:
+            print(b.current_time_step, b.input_m)
         b.total_in += b.input_m
        
        # Add the input mass to the bucket

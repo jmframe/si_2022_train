@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import cfe
 
 class BMI_CFE():
-    def __init__(self, cfg_file=None):
+    def __init__(self):
         """Create a Bmi CFE model that is ready for initialization."""
         super(BMI_CFE, self).__init__()
         self._values = {}
@@ -67,14 +67,15 @@ class BMI_CFE():
                                 'DEEP_GW_TO_CHANNEL_FLUX':['flux_from_deep_gw_to_chan_m','m']
                           }
 
+    #__________________________________________________________________
+    #__________________________________________________________________
+    # BMI: Model Control Function
+    def initialize(self,cfg_file=None, current_time_step=0):
+
         #------------------------------------------------------------
         # this is the bmi configuration file
         self.cfg_file = cfg_file
 
-    #__________________________________________________________________
-    #__________________________________________________________________
-    # BMI: Model Control Function
-    def initialize(self, current_time_step=0):
         self.current_time_step=current_time_step
 
         # ----- Create some lookup tabels from the long variable names --------#
