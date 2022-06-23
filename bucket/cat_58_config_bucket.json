@@ -1,6 +1,6 @@
 {
     "forcing_file":"../forcing/cat58_01Dec2015.csv",
-    "time_step_size_seconds":1,
+    "time_step_size_seconds":100,
     "surface_area_m2":100,
     "outlet_cross_area_m2":0.1,
     "outlet_elevation_m": 2,

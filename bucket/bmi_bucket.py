@@ -175,6 +175,7 @@ class BMI_BUCKET():
         # MANDATORY CONFIGURATIONS
         self.forcing_file                  = data_loaded['forcing_file']
         self.time_step_size                = data_loaded['time_step_size_seconds']
+        self._att_map['time_step_size']    = self.time_step_size
         self.bucket_top_area_m2            = data_loaded['surface_area_m2']
         self.outlet_cross_area_m2          = data_loaded['outlet_cross_area_m2']
         self.outlet_elevation_m            = data_loaded['outlet_elevation_m']

@@ -207,7 +207,7 @@ class BMI_PENMAN():
         array_like
             Copy of values.
         """
-        return np.random.random() #self.get_value_ptr(var_name)
+        return self.get_value_ptr(var_name)
 
     #-------------------------------------------------------------------
     def get_value_ptr(self, var_name):
